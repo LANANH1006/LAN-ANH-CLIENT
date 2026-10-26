@@ -7,10 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Giai nen source
-        run: |
-          mkdir -p work
-          unzip -qo lananh-client-source-no-shader.zip -d work
+      - run: mkdir work && unzip -qo lananh-client-source-no-shader.zip -d work
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -20,8 +17,13 @@ jobs:
           gradle-version: 8.12
       - name: Build
         working-directory: work
-        run: gradle build --no-daemon
-      - uses: actions/upload-artifact@v4
+        run: gradle build --no-daemon 2>&1 | tee ../build.log
+      - if: failure()
+        run: grep -n -E "error:|What went wrong" -A3 build.log | head -60
+      - if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: LanAnhClient-jar
-          path: work/build/libs/*.jar
+          name: build-log-and-jar
+          path: |
+            build.log
+            work/build/libs/*.jar
